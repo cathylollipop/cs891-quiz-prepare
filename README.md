@@ -147,3 +147,199 @@
 	* iterable
 
 	* forEach() method
+
+## Quiz 2
+
+* Functional programming has its roots in lambda calculus: 
+
+	* Computations are treated as the evaluation of mathematical functions. The output of one function serves as the input to the next function.
+
+	* Changing state & mutable data are discouraged/avoided. Instead, the focus is on "immutable" objects, i.e., objects whose state cannot change after they are constructed.
+
+* In contrast, object-oriented programming employs "hierarchical data abstraction":
+
+	* Components are based on stable class roles & relationships extensible via inheritance & dynamic binding, rather than by functions that correspond to algorithmic actions.
+
+	* State is encapsulated by methods that perform imperative statements. This state is often mutable.
+
+* Java 8's functional features help close the gap between a program's "domain intent" & its computations:
+
+	* Domain intent defines "what"
+
+	* Computations define "how"
+
+* Java 8's object-oriented features help to structure a program's software architecture
+
+	* Common classes provide a reusable foundation for extensibility
+
+	* Subclasses entend the common classes to create various custom solutions
+
+	* Java 8's FP features are most effective when used to simplify computations within the context of an OO software architecture, especially concurrent & parallel computations
+
+* A lambda expression is an unnamed block of code (with optional parameters) that can be stored, passed around, & executed later.
+
+* A method reference is a compact, easy-to-read handle for a method that already has a name:
+
+	* reference to a static method: ContainingClass::stacticMethodName
+
+	* reference to an instance method of a particular object: containingObject::instanceMethodName
+
+	* reference to an instance method of an arbitrary object of an given type: ContainingType::methodName
+
+	* reference to a constructor: ClassName::new
+
+* A functional interface contains only one abstract method
+
+* A functional interface is the type used for a parameter when a lambda expression or method reference is passed as an argument.
+
+* A predicate performs a test that returns true or false:
+
+```
+public interface Predicate<T> { boolean test(T t); }
+```
+
+* A function applies a computation on 1 parameter & returns a result:
+
+```
+public interface Function<T, R> { R apply(T t); }
+```
+
+* A BiFunction applies a computation on 3 parameters & returns a result:
+
+```
+public interface BiFunction<T, U, R> { R apply(T t, U u); }
+```
+
+* A Consumer accepts a parameter & returns no results:
+
+```
+public interface Consumer<T> { void accept(T t); }
+```
+
+* A Supplier returns a value & takes no parameters:
+
+```
+public interface Supplier<T> { T get(); }
+```
+
+* A constructor reference is also a Supplier.
+
+* A functional interface my also have default methods or static methods.
+
+* "embarrassingly parallel" -- there are no data dependencies between worker threads
+
+* Concurrency is a form of computing where threads can run simultaneously
+
+	* Concurrency often used to offload work from main thread to background threads
+
+	* Java threads interact with each other via shared objects and/or message passing
+
+	* Key goal is to share resources safely & efficiently to avoid race conditions
+
+* Parallelism is a form of computing that partitions tasks into sub-tasks that can run independently & whose partial results are combined
+	
+	* key goal is to efficiently -- partition tasks into sub-tasks & combine results
+
+	* Parallelism works best when there's no shared mutable state between threads
+
+* Foundational concurrency support:
+
+	* Focus on basic multi-threading & synchronization primitives
+
+	* Efficient, but low-level & very limited in capabilities
+
+* Advanced concurrency support:
+
+	* Focus on course-grained "task parallelism" whose computations can run concurrently
+
+	* Feature-rich & optimized, but also tedious & error-prone to program
+
+* Foundational parallelism support:
+	
+	* Focus on data parallelism that runs the same task on different data elements
+
+	* Powerful & scalable, but tricky to program correctly
+
+* Advanced parallelism support:
+
+	* Focus on functional programming for data parallelism & asynchrony
+
+	* Strikes an effective balance between productivity & performance
+
+* Concurrency is about correctly and efficiently controlling access to shared resources
+
+* Parallelism is about using additional resources to produce an answer faster
+
+* Java 8 streams are an addition to the Java library that provide programs with several key benefits:
+
+	* Manipulate flows of data in a declarative way
+
+	* Enable transparent parallelization without the need to write any multi-threaded code
+
+* A stream is a pipeline of aggregate operations that process a sequence of elements. A stream is created via a factory method
+
+* An aggregate operation performs a behavior on each element in a stream
+
+	* Ideally, a behavior's output in a stream depends only on its input arguments
+
+	* Behaviors with side-effects likely incurrace conditions in parallel streams
+
+* Streams enhance flexibility by forming a "processing pipeline" that chains multiple aggregate operations together
+
+* A stream holds no non-transient storage
+
+* Every stream works very similarly:
+
+	* Starts with a source of data
+
+	* Processes the data through a pipeline of intermediate operations
+
+	* Finishes with a terminal operation that yields a non-stream result, e.g.
+
+		* no value at all
+
+		* a collection
+
+		* a primitive value
+
+* Each aggregate operation in a stream runs its behavior sequentially by default. A Java 8 parallel stream splits its elements into multiple chunks & uses a common fork-join pool to process the chunks independently
+
+* An aggregate operation processes all elements in a stream:
+
+	* map: applies the given function to the elements of the input stream & returns an output stream consisting of the results. (May change the type of the stream)
+
+	* filter: Tests the given predicate against each element of the input stream & returns an output stream consisting only of the elements that match the predicate. (May reduce the number of elements in Stream)
+
+	* collect: A terminal operation that uses a collector to perform a reduction on the elements of its input stream & returns the results of the reduction.
+
+* Terminal operation will trigger intermediate operation processing.
+
+* A spliterator is a new type of "splittable iterator" in Java 8
+	
+	* It can be used to traverse elements of a source
+
+	* It can also partition all elements of a source
+
+		* Mostly used with Java 8 parallel streams
+
+* Collector defines an interface whose implementations can accumulate input elements in a mutable result container
+
+* The Collector interface defines three generic types:
+
+	* T - The type of objects available, e.g., Integer
+
+	* A - The type of a mutable accumulator object for collection, e.g., ArrayList<T>
+
+	* R - The type of a final result, e.g., ArrayList<T>
+
+* The Collector interface has five methods:
+	
+	* supplier() - returns a Supplier instance that generates an empty accumulator, e.g., `return ArrayList::new`
+
+	* accumulator() - returns a function that adds a new element to an existing accumulator, e.g., `return ArrayList::add`
+
+	* combiner() - returns a function that merges two accumulators together, e.g., `return (List<T> one, List<T> another) -> { one.addAll(another); return one;};`
+
+	* finisher() - returns a function that converts an accumulator to final result type, e.g., `return Function.identity()`
+
+	* charactersitics() - provides a stream with additional information used for internal optimizations, e.g., UNORDERED, INDENTIFY_FINISH, CONCURRENT
