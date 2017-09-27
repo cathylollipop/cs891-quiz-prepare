@@ -343,3 +343,173 @@ public interface Supplier<T> { T get(); }
 	* finisher() - returns a function that converts an accumulator to final result type, e.g., `return Function.identity()`
 
 	* charactersitics() - provides a stream with additional information used for internal optimizations, e.g., UNORDERED, INDENTIFY_FINISH, CONCURRENT
+
+## Quiz 3
+
+* Pros of SearchWithSequentialStreams:
+	
+	* Streams use "internal" iterators versus "external" iterators used by collections
+
+	* pipeline is declarative since it's a series of transformations performed by aggregate operations
+
+	* focus on "what" operations to perform, rather than on "how" they're implemented
+
+	* lambda functions without side-effects make it easier to reson about behavior & enables optimization
+
+* Cons of SearchWithSequentialStreams
+
+	* slower than using sequential loops (add overthead)
+
+* Common factory methods for creating streams
+
+	* from a java collection: Collection.stream() / parallelStream()
+
+		* a call to parallel() can appear anywhere in a stream & will have same effect as parallelStream()
+
+	* from an array: Arrays.stream(arr)
+
+	* from a static factory method: Stream.of(arr)
+
+	* (sequential only)Stream.iterate(new BigIntegerp[] {BigInteger.ONE, BigInteger.ONE}, f -> new BigInteger[]{f[1], f[0].add(f[i])}).map(f -> f[0]).limit(100).forEach(...)
+
+	* BufferedReader.lines() obtains lines of a file
+
+	* Files.lines()
+
+	* Random.ints(0,100).limit(50).forEach(...)
+
+	* Stream.generate(TreeMap<Long, String>::new).limit(100).collect(toList());
+
+* Advantages of internal iterators over external iterators:
+	
+	* improved code readability
+
+	* transparent optimizations
+
+	* fewer bugs
+
+* Advantages of external iterators over internal iterators:
+
+	* More control over iteration steps
+
+	* Multiple active iterators
+
+* A Java 8 stream is an implementation of the POSA1 pipes & filter pattern -> divide an app's tasks into multiple self-contained data processing steps & connect these steps via intermediate data buffers to form a data processing pipeline
+
+* other common implementations of pipes & filters: 
+	
+	* a pipeline in UNIX command-line shells
+
+	* System V STREAMS
+
+* Java I/O streams are different from Java 8 streams
+
+* collection vs. streams:
+	
+	* a collection is an in-memory data structure that can store, retrieve, & manipulate groups of elements
+
+	* a stream is a fixed data structure that processes elements on-demand
+
+	* various factory methods can convert collections to streams & vice versa
+
+* Java 8 adds two new concurrency & parallelism frameworks related to functional programming
+
+	* parallel streams:
+
+		* partitions a stream into multiple substreams that run independently & combine into a "reduced" result
+
+		* chunks of data in the substreams can be mapped to multiple threads(&cores)
+
+	* completable futures
+
+		* supports dependent actions that trigger upon completion of async operations
+
+		* Async operations can run concurrently in thread pools
+
+	* these frameworks often eliminate the use of synchronization or explicit threading when developing concurrent/parallel apps!
+
+	* both fameworks use the fork-join pool framework by default
+
+		* employs work-stealing to accelerate performance on multi-core processors
+
+* A java 8 parallel stream splits its elements into multiple chuncks & uses a thread pool to process these chunks independently
+	
+	* this splitting & thread pool are often invisible to programmers
+
+	* the order in which chunks are processed is likely non-deterministic, i.e., programmers often have little/no control over how chunks are processed
+
+	* the results of the processing are likely deterministic
+
+	* when a stream executes sequentially all of its aggregate operations run in a single thread
+
+	* when a stream executes in parallel, it is partitioned into multiple substream "chunks" that run in a common fork-join pool
+
+	* the same aggregate operations can be used for sequential & parallel streams
+
+		* Java 8 streams can thus treat parallelism as an optimization & leverage all available cores!
+
+		* Naturally, behaviors run by thes aggregate operations must be designed carefully to avoid accessing unsynchronized shared state..
+
+* A Java 8 parallel stream implements a "map/reduce" variant optimized for multi-core processors
+
+	* It's actually more like the "split-apply-combine" data anlysis strategy.
+
+* Splite-apply-combine workflow:
+	
+	* split - recursively partition a data source into independent "chunks"
+
+		* spliterators are defined to partition collections in Java 8
+
+		* you can also define custom spliterators
+
+		* parallel streams perform better on data sources that can be split efficiently & evenly
+
+	* apply - process chunks independently in a pool of threads
+
+		* programmer have some control over how many threads are in the pool
+
+	* combine - join partial results into a single result
+
+		* performed by terminal operations like collect() & reduce()
+
+* Java 8 parallel streams framework assumes behaviors don't incur race conditions, parallel streams should therefore avoid operations with side-effects, e.g.:
+	
+	* stateful lambda expressions
+
+	* interference w/the data source
+
+* Java 8 lambda expressions & method references containing no shared state are useful for parallel streams since they needn't be explicitly synchronized
+
+* a parallel program always does more work than a non-parallel program
+	
+	* it needs to partition the problem
+
+	* it needs to perform processing
+
+	* it needs to combine the results
+
+* Java 8 parallel streams are thus useful in some (but not all) conditions, e.g.,
+	
+	* when behaviors have certain properties:
+
+		* independent
+
+		* computationally expensive
+
+		* applied to many elements of data sources
+
+		* if there are multiple cores
+
+	* the "NQ" model: N is the # of data items to process per thread, Q quantifies how CPU-intensive the processing is.
+
+* when not to use Java 8 parallel streams:
+	
+	* the source is expensive to split or splits unevenly
+
+	* the startup cost of parallelism overwhelm the amount of data
+
+	* combining partial results is costly
+
+	* a Java 8 feature doesn't enable sufficient exploitable parallelism
+
+	* there aren't many/any cores
