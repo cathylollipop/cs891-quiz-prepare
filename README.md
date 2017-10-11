@@ -513,3 +513,165 @@ public interface Supplier<T> { T get(); }
 	* a Java 8 feature doesn't enable sufficient exploitable parallelism
 
 	* there aren't many/any cores
+
+## quiz 4
+
+* Synchronous calls - a behavior borrows the thread of its caller until its computation finish
+	
+	* pros:
+
+		* "intuitive" since they map cleanly onto conventional two-way method patterns
+
+	* cons：
+
+		* may not take advantage of all the parallelism available in multi-core systems
+
+			* blocking threads incur overhead - context switching
+
+			* selecting right number of thread is hard
+
+		* synchronous calls may need to (dynamically) change the size of the common fork-join pool
+
+* Asynchronous calls - return a future & continue running the computation in the background without blocking the caller thread. 
+
+	* A future is a proxy that represents the result of an async computation
+
+	* When the computation completes the future is triggered & the caller can get the result
+
+		* get() returns a result via blocking, polling, or time-bounded blocking
+
+		* results can occur in a different order than the original calls were made
+
+* Pros of Java traditional future:
+	
+	* may leverage inherent parallelism more effectively with fewer threads, e.g.
+
+		* queue async computations for execution in a pool of threads
+
+		* automatically tune variable number of threads based on the workload
+
+		* queue of futures can be triggered to get the results
+
+	* can lock until the result of an async two-way task is available
+
+	* can be canceled & tested to see if a task is done
+
+* Cons of Java traditional future:
+	
+	* limited feature set:
+
+		* cannot be completed explicitly
+
+		* cannot be chained together fluently to handle async results
+
+		* cannot be triggered reactively/efficiently as a collection of futures without undue overhead
+
+* Java 8 completable futures - provides an async concurrent programming model
+	
+	* supports dependent actions that trigger upon completion of async operations
+
+	* Async operations can run concurrently in thread pools
+
+	* overcome traditional future limitations:
+
+		* can be completed explicitly
+
+		* can be chained together fluently to handle async results efficiently
+
+		* can be triggered reactively/efficiently as a collection of futures without undue overhead
+
+	* basic features: future API 
+
+	* advanced features: factory methods, chaining methods, arbitrary-arity methods
+
+* Java completable future basic features:
+	
+	* support future API:
+
+		* can block & poll
+
+		* can be cancelled & tested if canceled/done
+
+			* cancel() doesn't interrupt the computation by default..
+
+	* define a join() method - behaves like get() without using checked exceptions (nice in stream chaining syntax)
+
+	* can be completed explicitly
+
+* Limitaion of basic features:
+	
+	* cannot be chained fluently to handle async results
+
+	* cannot be triggered reactively
+
+	* cannot be treated efficiently as a collection of futures
+
+* Java completable future advanced features - factory methods: supplyAsync, runAsync
+
+	* supplyAsync() allows two-way calls via a supplier - can be passed params & returns a value. (params are passed as "effectively final" objects to the supplier lambda)
+
+	* runAsync() enables one-way calls via a Runnable - can be passed params, but returns no values.
+
+	* Async functionality runs in a thread pool
+
+* Java completable future advanced features - completion stage methods
+	
+	* a completable future can serve as a "completion stage" for async result processing
+
+		* an action is performed on a completed async call result
+
+		* method can be chained together "fluently"
+
+			* each method registers a lambda action to apply
+
+			* a lambda action is called only after the previous stage comple
+
+	* can be grouped based on how a stage is triggered by a previous stage
+
+		* completion of a single previous stage
+
+		* completion of both of 2 previous stages
+
+		* completion of either of 2 previous stages
+
+	* thenApply()
+
+		* applies a function action to the previous stage's result
+
+		* returns a future containing the result of the action
+
+		* used for a sync action that returns a value, not a future
+
+	* thenCompose()
+
+		* applies a function action to the previous stage's result
+
+		* returns a future containing result of the action directly - not a nested future
+
+		* used for an async action that returns a completable future
+
+		* avoids unwieldy nesting of futures thenApply()
+
+	* thenAccept()
+
+		* applies a consumer action to handle previous stage's result
+
+		* returns a future to Void
+
+		* often used at the end of a chain of completion stages
+
+	* thenCombine()
+
+		* applies a bifunction action to two previous stages' results
+
+		* returns a future containing the result of the action
+
+		* used to "join" two paths of execution
+
+	* acceptEither()
+
+		* applies a consumer action that handles either of the previous stage's results
+
+		* returns a future to void
+
+		* often used at the end of a chain of completion stages
