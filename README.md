@@ -675,3 +675,144 @@ public interface Supplier<T> { T get(); }
 		* returns a future to void
 
 		* often used at the end of a chain of completion stages
+
+## quiz 5
+
+* Exception handling methods: handling runtime exceptions in completion stages
+
+	* whenComplete(BiFunction) returns completable future with result of early stage or throws exception -> handle outcome of a stage, whether a result value or exception
+	
+	* handle(BiFunction) returns a completable future with result of BiFunction -> handle outcome of a stage & return new value
+
+	* exceptionally(Function) returns a completable future of ? -> when exception occurs, replace exception with result value
+
+* Arbitrary-Arity methods:
+	
+	* arbitrary-arity methods are triggered after completion of some/all of n futures.
+
+	* can wait for any or all completable futures in an array to complete
+
+	* allOf -> return a future that completes when all futures in params complete
+
+	* anyOf -> return a future that completes when any future in params complete
+
+	* use future collector wrapper to collect a stream of completable furture to E, into one completable future to list of completed E.
+
+		* magic happens in the finisher of the collector. Inside the finisher, it convert a list of completable future into a completable future of a completed list by allOf and map(join)
+
+* 3 phases of Java 8 parallel stream
+	
+	* "splits" its elements into multiple chunks
+
+	* "applies" processing on these chunks to run them in a thread pool independently.
+
+	* "combines" partial results into a single result
+
+* a parallel stream's splitting & thread pool mechanisms are often invisible, e.g.
+
+	* Java collections have predifined spliterators
+
+	* a common fork-join pool is used by default
+
+	* programmers can customize the behavior of splitting & thread pools
+
+* parallel stream ordering
+
+	* the order in which chunks are processed is non-deterministic - the programmer have little/no control over how chunks are processed
+
+	* non-determinism is useful since it enables optimizations at multiple layers!
+
+	* the result of the processing are more deterministic
+
+		* programmers can control how results are presented
+
+			* order (encounter order!) is maintained if the source is ordered & the aggregate operations used are obliged to maintain order
+
+				* ordered spliterators, ordered collections (array, list), & static stream factory methods respect "encounter order"
+
+				* unordered collections (HashSet TreeSet) don't need to respect "encounter order"
+
+			* certain intermediate operations effect ordering behavior
+
+				* e.g., sorted(), unordered(), skip(), & limit() --> stateful operations
+
+				* sorted() will slower down the parallel operation, unordered() will accelerate the operations
+
+			* certain terminal operations also effect ordering behavior
+
+				* e.g., forEach() & forEachOrdered() (maintain encounter order)
+
+* partitioning a parallel stream
+	
+	* a spliterator partitions a Java 8 stream into chunks
+
+		* the framework will call trySplit() recursively until the size of chunk below the requirement. Then tryAdvance() to get elements.
+
+	* some collection split evenly & efficiently, e.g., ArrayList
+
+	* some collection DO NOT split evenly & efficiently, e.g., LinkedList
+
+* processing chunks in parallel
+	
+	* the chunks created by a spliterator are processed in a common fork-join pool
+
+		* all parallel streams in a process share this common fork-join pool by default
+
+	* ForkJoinPool is an Executor Service implementation that runs ForkJoinTasks
+
+		* it provides the entry point for submissions from non-ForkJoinTask clients, submit()
+
+		* it also provides management & monitoring operations, stealCount()
+
+	* A ForkJoinTask is a chunk of data along with functionality on that data
+
+		* it defines two primary methods -> fork(), exec this task 	asynchronously in the appropriate pool; join() return the result when it is done.
+
+		* invoke() is essientially fork() & join()
+
+		* A ForkJoinTask is lighter weight than a Java thread
+
+		* a large number of tasks running on a small number of java threads
+
+	* a circular dequeue is associated with each ForkJoinPool thread
+
+		* fork() pushes a new task to the head of its dequeue
+
+		* a thread pops the next task from the head of the dequeue and run it
+
+		* a idle thread will steal tasks from the tail of other's dequeue
+
+* configuring the parallel stream common fork-join-pool
+	
+	* in particular, the common fork-join-pool optimizes resource utilization since it's aware of what cores are being used globally
+
+	* by default the common fork-join-pool has threads = # of cores - 1
+
+	* default might not be adequate -> what if all the working thread are blocking due to I/O
+
+		* can control the pool size programmatically -> but it will effect all parallel stream that uses common pool in a process
+
+	* the ManagedBlocker class can be used to temporarily add worker threads to common fork-join pool
+
+		* this is useful for behaviors that block on I/O and/or synchronizers
+
+* ManagedBlocker handles cases where more worker threads may be needed to ensure liveness/responsiveness
+	
+	* e.g., to automatically/temporarily increase common fork/join pool size
+
+* ForkJoinPool reclaims threads during periods of non-use & reinstates them on later use; ForkJoinPool also tries to create or activate threads to ensure the target parallelism level is met
+
+* ForkJoinPool uses ManagedBlocker internelly
+
+* Combining results in parallel stream
+
+	* different terminal operations combine partial results in different ways, e.g.
+
+		* reduce() create a new immutable value
+
+		* collect() muatates a existing value
+
+* collector implementations can either be non-concurrent or concurrent based on their characteristics.
+	
+
+
