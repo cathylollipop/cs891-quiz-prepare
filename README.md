@@ -814,5 +814,124 @@ public interface Supplier<T> { T get(); }
 
 * collector implementations can either be non-concurrent or concurrent based on their characteristics.
 	
+	* a non-concurrent collector can be used for either a sequential stream or a parallel stream
 
+* a non-concurrent collector operates by merging sub-results
+	
+	* the input source is partitioned
 
+	* each chunk is collected into a result container
+
+	* these sub-results are then merged into a final mutable result container
+
+		* only one thread in the fork-join pool is used to merge any pair of intermediate result
+
+* a concurrent collector creates one concurrent result container & inserts elements into it from multiple threads in a parallel stream
+	
+	* the input source is partitioned
+
+	* each chunk is collected into one concurrent result container
+
+* a concurrent collector may perform better than a non-concurrent collector if merging costs are high
+
+* parallel stream construction & execution
+	
+	* when terminal operation runs the stream framework picks an execution plan
+
+	* the plan is based on properties of the source & aggregate operations
+
+	* intermediate operations are divided into two categories:
+
+		* stateless: filter(), map(), flatMap()
+
+		* stateful: sorted(), limited(), distinct()
+
+	* terminal operations are also divided into two categories
+
+		* non-short-circuiting: reduce(), collect(), forEach()
+
+		* short-circuit: anyMatch(), findFirst()
+
+## quiz 6
+
+* ImageStreamGang
+	
+	* java 8 features: sequential & parallel streams, completable futures, lambda expressions & method references
+
+	* patterns: pipes and filters, pooling, template method, decorator & factory method, singleton, command
+
+* fork-join pool provides a high performance, fine-grained task execution framework for java data parallelism
+
+	* it provides a parallel computing engine for many higher-level frameworks
+
+	* the fork-join pool supports a style of parallel programming that solves problems by divide & conquer, e.g.
+
+		* splitting a task into sub-tasks - fork()
+
+		* solving the sub-tasks in parallel
+
+		* waiting for them to complete
+
+		* merging the results
+
+	* ForkJoinPool is an executor service implementation
+
+	* ForkJoinPool enables non-ForkJoinTask clients to process ForkJoinTasks
+
+		* Clients insert new tasks onto a shared queued used to feed work-stealing queues managed by worker threads
+
+		* the goal is to maximize utilization of processor cores
+
+	* A ForkJoinTask associates a chunk of data along with a compuation on that data
+
+		* this enables fine-grained data parallelism
+
+		* a ForkJoinTask is lighter weight than a Java thread - a large # of ForkJoinTasks can thus run in a small # of worker threads in a fork-join pool
+
+		* fork() - arranges to asynchronously execute this task in the appropriate pool
+
+		* join() - returns the result of the computation when it is done
+
+			* ForkJoinTask.join() doesn't simply block the calling thread, instead, it uses a worker thread to help run other tasks
+
+			* when a worker thread encounters a join() it processes any other tasks until it notices the target sub-task is done
+
+	* programs rarely use the ForkJoinTask class directly... but instead extend one of its subclasses & override compute()
+
+		* recursive action
+
+		* recursive task
+
+		* couted completer
+
+	* each worker thread in a fork-join pool maintains its own deque
+
+	* sub-tasks fork()'d in a task run by a worker thread are pushed onto the head of that worker's own deque
+
+	* a worker threads processes its own deque in LIFO order by poping (sub-)tasks from the head of its own deque -- improve cache performance
+
+	* to maximize core utilization, idle worker threads "steal" work from the tail of busy threads' deques
+
+		* tasks are stolen in FIFO order since and older stolen task may provide a larger unit of work - enables further recursive decompositions by the stealing thread
+
+		* the WorkQueue deque that implements work-stealing minimizes locking contention
+
+			* push() & pop() are only called by the owning worker thread
+
+			* these operations use wait-free "comapre and swap" operations
+
+			* poll() may be called from another worker thread to "steal" a (sub)task, may not always be wait-free
+
+* Java Fork-Join Common Pool
+
+	* a static common pool is available & appropriate for most applications
+
+	* the common pool is used by any ForkJoinTask that is not explicitly submitted to a specified pool
+
+	* the common pool may optimize resource utilization since it's aware what cores are being used globally
+
+	* by default the size will be # of cores - 1, size can be expanded & contracted programmatically
+
+		* by modifying a system property
+
+		* by using a ManagedBlocker
